@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/bitly/go-nsq"
@@ -24,7 +23,6 @@ type LatencyMessageHandler struct {
 	Results          []byte
 	messageCounter   int
 	Channel          string
-	Pub              *nsq.Producer
 }
 
 // Record each message's latency. The message contains the timestamp when it was sent.
@@ -119,23 +117,19 @@ func NewNsq(numberOfMessages int, msgSize int, channeL string) {
 		NumberOfMessages: numberOfMessages,
 		Latencies:        []float32{},
 		Channel:          channeL,
-		Pub:              pub,
 	}
 
-	n.sub.AddHandler(nsq.HandlerFunc(func(message *nsq.Message) error {
-		n.handler.ReceiveMessage(message.Body)
+	sub.AddHandler(nsq.HandlerFunc(func(message *nsq.Message) error {
+		handler.ReceiveMessage(message.Body)
 		return nil
 	}))
 
 	i, _ := strconv.Atoi(channeL)
+
 	if i < 1280 {
-		n.sub.ConnectToNSQD("10.0.0.26:4150")
+		sub.ConnectToNSQD("10.0.0.26:4150")
 	} else {
-		n.sub.ConnectToNSQD("localhost:4150")
+		sub.ConnectToNSQD("localhost:4150")
 	}
 
-}
-
-func (n *Nsq) Teardown() {
-	n.sub.Stop()
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	//"fmt"
+	//"log"
 	"os"
 	"runtime"
 	"strconv"
@@ -11,8 +11,8 @@ import (
 	"github.com/Chong-Li/Messaging-Service-Test/subscriber/mq"
 )
 
-func newTester(msgCount, msgSize int, channel string) {
-	mq.NewNsq(msgCount, testLatency, channel)
+func newTest(msgCount, msgSize int, channel string) {
+	mq.NewNsq(msgCount, msgSize, channel)
 }
 
 func main() {

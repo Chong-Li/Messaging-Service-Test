@@ -1,4 +1,4 @@
-package nsq
+package mq
 
 import (
 	//"strconv"
