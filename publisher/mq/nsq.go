@@ -8,10 +8,11 @@ import (
 )
 
 type Nsq struct {
-	pub      *nsq.Producer
-	msgCount int
-	msgSize  int
-	topic    string
+	pub       *nsq.Producer
+	msgCount  int
+	msgSize   int
+	topic     string
+	topic_raw string
 }
 
 func NewNsq(msgCount int, msgSize int, topic_raw string) *Nsq {
@@ -25,10 +26,11 @@ func NewNsq(msgCount int, msgSize int, topic_raw string) *Nsq {
 	//	}
 
 	return &Nsq{
-		pub:      pub,
-		msgCount: msgCount,
-		msgSize:  msgSize,
-		topic:    topic,
+		pub:       pub,
+		msgCount:  msgCount,
+		msgSize:   msgSize,
+		topic:     topic,
+		topic_raw: topic_raw,
 	}
 }
 
@@ -41,7 +43,7 @@ func (n *Nsq) Send(message []byte) {
 	//ch := make([]byte, 3)
 	//binary.PutVarint(ch, strconv.Atoi(n.channel))
 	//message=append(message, ch)
-	message = append(message, n.topic...)
+	message = append(message, n.topic_raw...)
 	message = append(message, "\n"...)
 	b := make([]byte, n.msgSize-len(message))
 	//fmt.Printf("~~~~~~~~~~~~~~%d\n", len(message))

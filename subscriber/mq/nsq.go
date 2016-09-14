@@ -127,7 +127,7 @@ func NewNsq(numberOfMessages int, msgSize int, channeL string) {
 	i, _ := strconv.Atoi(channeL)
 
 	if i < 1280 {
-		sub.ConnectToNSQD("10.0.0.26:4150")
+		sub.ConnectToNSQD("localhost:4150")
 	} else {
 		sub.ConnectToNSQD("localhost:4150")
 	}
