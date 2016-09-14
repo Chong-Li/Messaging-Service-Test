@@ -1,124 +1,56 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
-	"runtime"
 
-	"github.com/Chong-Li/RTM-test/publisher/benchmark"
-	"github.com/Chong-Li/RTM-test/publisher/benchmark/mq"
+	"github.com/Chong-Li/Messaging-Service-Test/publisher/mq"
 )
 
-func newTester(subject string, testLatency bool, msgCount, msgSize int, channel string) *benchmark.Tester {
-	var messageSender benchmark.MessageSender
-	var messageReceiver benchmark.MessageReceiver
+func newTest(msgCount, msgSize int, topic string) {
 
-	switch subject {
-	
-	case "nsq":
-		nsq := mq.NewNsq(msgCount, testLatency, channel)
-		messageSender = nsq
-		messageReceiver = nsq
-	
-	default:
-		return nil
-	}
+	nsq := mq.NewNsq(msgCount, msgSize, topic)
 
-	return &benchmark.Tester{
-		subject,
-		msgSize,
-		msgCount,
-		testLatency,
-		messageSender,
-		messageReceiver,
-	}
-}
-
-func parseArgs(usage string) (string, bool, int, int) {
-
-	if len(os.Args) < 2 {
-		log.Print(usage)
-		os.Exit(1)
-	}
-
-	test := os.Args[1]
-	messageCount := 1000000
-	messageSize := 1000
-	testLatency := false
-
-	if len(os.Args) > 2 {
-		latency, err := strconv.ParseBool(os.Args[2])
-		if err != nil {
-			log.Print(usage)
-			os.Exit(1)
+	start := time.Now().UnixNano()
+	b := make([]byte, 24)
+	id := make([]byte, 5)
+	//b:=[]byte{}
+	//time.Sleep(5000*time.Millisecond)
+	for i := 0; i < msgCount; i++ {
+		if i == 1 {
+			time.Sleep(5 * time.Second)
 		}
-		testLatency = latency
+		binary.PutVarint(b, time.Now().UnixNano())
+		binary.PutVarint(id, int64(i))
+		//b=append(b, strconv.FormatInt(int64(i), 10)...)
+		copy(b[19:23], id[:])
+
+		nsq.Send(b)
+		time.Sleep(4096 * time.Microsecond)
 	}
 
-	if len(os.Args) > 3 {
-		count, err := strconv.Atoi(os.Args[3])
-		if err != nil {
-			log.Print(usage)
-			os.Exit(1)
-		}
-		messageCount = count
-	}
+	stop := time.Now().UnixNano()
+	ms := float32(stop-start) / 1000000
+	log.Printf("Sent %d messages in %f ms\n", msgCount, ms)
+	log.Printf("Sent %f per second\n", 1000*float32(msgCount)/ms)
 
-	if len(os.Args) > 4 {
-		size, err := strconv.Atoi(os.Args[4])
-		if err != nil {
-			log.Print(usage)
-			os.Exit(1)
-		}
-		messageSize = size
-	}
-
-	return test, testLatency, messageCount, messageSize
+	nsq.Teardown()
 }
 
 func main() {
-	usage := fmt.Sprintf(
-		"usage: %s "+
-			"{"+
-			"inproc|"+
-			"zeromq|"+
-			"nanomsg|"+
-			"kestrel|"+
-			"kafka|"+
-			"rabbitmq|"+
-			"nsq|"+
-			"redis|"+
-			"activemq|"+
-			"nats|"+
-			"beanstalkd|"+
-			"iris"+
-			"} "+
-			"[test_latency] [num_messages] [message_size]",
-		os.Args[0])
-
-		runtime.GOMAXPROCS(runtime.NumCPU())
-		num, _ := strconv.Atoi(os.Args[1])
-		topic, _ := strconv.Atoi(os.Args[2])
-		for i:=0; i< num; i++ {
-			tester := newTester("nsq", true, 13000, 512, strconv.Itoa(topic+i))
-			if tester == nil {
-				log.Println(usage)
-				os.Exit(1)
-			}
-
-			go tester.Test()
-			//tester.Test()
-		}
-		//tester := newTester("nsq", true, 10000, 1024, strconv.Itoa(0))
-		//tester.Test()
-
-		for {
-			time.Sleep(20 * time.Second)	
-		}
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	num, _ := strconv.Atoi(os.Args[1])
+	topic, _ := strconv.Atoi(os.Args[2])
+	for i := 0; i < num; i++ {
+		go newTest(13000, 512, strconv.Itoa(topic+i))
+	}
+	for {
+		time.Sleep(20 * time.Second)
+	}
 
 }
-
-
